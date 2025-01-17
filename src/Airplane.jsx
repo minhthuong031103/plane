@@ -26,7 +26,7 @@ export function Airplane({ handResult }) {
   const helixMeshRef = useRef();
 
   useFrame(({ camera }) => {
-    updatePlaneAxis(x, y, z, planePosition, camera, handResult);
+    // updatePlaneAxis(x, y, z, planePosition, camera, handResult);
 
     const rotMatrix = new Matrix4().makeBasis(x, y, z);
 

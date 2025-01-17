@@ -11,47 +11,54 @@ import { Canvas } from "@react-three/fiber";
 import HandRecognizer from "./HandRegconizer";
 
 function App() {
-  const [handResults, setHandResults] = useState({ tilt: 0, degrees: 0 });
+  const [handResults, setHandResults] = useState(null);
 
   return (
-    <>
-      <HandRecognizer setHandResults={setHandResults} />
-      <Canvas shadows>
-        <SphereEnv />
-        <Environment background={false} files={"assets/textures/envmap.hdr"} />
+    <div style={{ display: "flex", height: "100vh" }}>
+      {/* Container A */}
+      <div style={{ width: "640px", height: "100%" }}>
+        <HandRecognizer setHandResults={setHandResults} />
+      </div>
 
-        <PerspectiveCamera makeDefault position={[0, 10, 10]} />
+      {/* Container B */}
+      <div style={{ flex: 1, height: "100%" }}>
+        <Canvas shadows>
+          <SphereEnv />
+          <Environment background={false} files={"assets/textures/envmap.hdr"} />
 
-        <Landscape />
-        <Airplane handResult={handResults} />
-        <Targets />
+          <PerspectiveCamera makeDefault position={[0, 10, 10]} />
 
-        <directionalLight
-          castShadow
-          color={"#f3d29a"}
-          intensity={2}
-          position={[10, 5, 4]}
-          shadow-bias={-0.0005}
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-          shadow-camera-near={0.01}
-          shadow-camera-far={20}
-          shadow-camera-top={6}
-          shadow-camera-bottom={-6}
-          shadow-camera-left={-6.2}
-          shadow-camera-right={6.4}
-        />
+          <Landscape />
+          <Airplane handResult={handResults} />
+          <Targets />
 
-        <EffectComposer>
-          <MotionBlur />
-          <HueSaturation
-            blendFunction={BlendFunction.NORMAL} // blend mode
-            hue={-0.15} // hue in radians
-            saturation={0.1} // saturation in radians
+          <directionalLight
+            castShadow
+            color={"#f3d29a"}
+            intensity={2}
+            position={[10, 5, 4]}
+            shadow-bias={-0.0005}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            shadow-camera-near={0.01}
+            shadow-camera-far={20}
+            shadow-camera-top={6}
+            shadow-camera-bottom={-6}
+            shadow-camera-left={-6.2}
+            shadow-camera-right={6.4}
           />
-        </EffectComposer>
-      </Canvas>
-    </>
+
+          <EffectComposer>
+            <MotionBlur />
+            <HueSaturation
+              blendFunction={BlendFunction.NORMAL} // blend mode
+              hue={-0.15} // hue in radians
+              saturation={0.1} // saturation in radians
+            />
+          </EffectComposer>
+        </Canvas>
+      </div>
+    </div>
   );
 }
 
