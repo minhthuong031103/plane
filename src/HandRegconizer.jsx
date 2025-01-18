@@ -1,6 +1,8 @@
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useRef } from "react";
+import { controls } from "./controls.js";
+
 
 let detectionInterval;
 // eslint-disable-next-line react/prop-types
@@ -161,19 +163,27 @@ function handleControls(detections, controlCanvas) {
   const threshold = 50; // Movement threshold
 
   if (x < centerX - threshold) {
-    logKeyPress("KeyA"); // Move left
-    simulateKeyPress("KeyA");
-  } else if (x > centerX + threshold) {
-    logKeyPress("KeyD"); // Move right
-    simulateKeyPress("KeyD");
+    controls["a"] = true; // Simulates pressing "A"
+  } else {
+    controls["a"] = false;
+  }
+
+  if (x > centerX + threshold) {
+    controls["d"] = true; // Simulates pressing "D"
+  } else {
+    controls["d"] = false;
   }
 
   if (y < centerY - threshold) {
-    logKeyPress("KeyW"); // Move up
-    simulateKeyPress("KeyW");
-  } else if (y > centerY + threshold) {
-    logKeyPress("KeyS"); // Move down
-    simulateKeyPress("KeyS");
+    controls["s"] = true; // Simulates pressing "W"
+  } else {
+    controls["s"] = false;
+  }
+
+  if (y > centerY + threshold) {
+    controls["w"] = true; // Simulates pressing "S"
+  } else {
+    controls["w"] = false;
   }
 
   // Draw the control area
@@ -182,13 +192,4 @@ function handleControls(detections, controlCanvas) {
   ctx.strokeStyle = "red";
   ctx.lineWidth = 2;
   ctx.stroke();
-}
-
-function simulateKeyPress(key) {
-  const event = new KeyboardEvent("keydown", { key });
-  document.dispatchEvent(event);
-}
-
-function logKeyPress(key) {
-  console.log(`Key Pressed: ${key}`);
 }

@@ -3,7 +3,6 @@ function easeOutQuad(x) {
 }
 
 export let controls = {};
-
 window.addEventListener("keydown", (e) => {
   controls[e.key.toLowerCase()] = true;
 });
@@ -17,7 +16,7 @@ let pitchVelocity = 0;
 let planeSpeed = 0.006;
 export let turbo = 0;
 
-export function updatePlaneAxis(x, y, z, planePosition, camera) {
+export function updatePlaneAxis(x, y, z, planePosition, camera, handResult) {
   jawVelocity *= 0.95;
   pitchVelocity *= 0.95;
 
@@ -26,6 +25,8 @@ export function updatePlaneAxis(x, y, z, planePosition, camera) {
 
   if (Math.abs(pitchVelocity) > maxVelocity)
     pitchVelocity = Math.sign(pitchVelocity) * maxVelocity;
+
+  if (!handResult) return;
 
   if (controls["a"]) {
     jawVelocity += 0.0025;
