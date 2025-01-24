@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unknown-property */
 import { useTexture } from "@react-three/drei";
 import { BackSide } from "three";
 
@@ -6,7 +7,7 @@ export function SphereEnv() {
 
   return <mesh>
     <sphereGeometry args={[60, 50, 50]} />
-    <meshBasicMaterial 
+    <meshBasicMaterial
       side={BackSide}
       map={map}
     />

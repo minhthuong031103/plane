@@ -1,15 +1,11 @@
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
-// eslint-disable-next-line no-unused-vars
-import React, { useEffect, useRef } from "react";
-import { controls } from "./controls.js";
-
+import { useEffect, useRef } from "react";
 
 let detectionInterval;
 // eslint-disable-next-line react/prop-types
 export default function HandRecognizer({ setHandResults }) {
   const videoRef = useRef();
   const canvasRef = useRef(null);
-  const controlCanvasRef = useRef(null);
 
   useEffect(() => {
     initVideoAndModel();
@@ -35,7 +31,6 @@ export default function HandRecognizer({ setHandResults }) {
         Date.now()
       );
       processDetections(detections, setHandResults, canvasCtx, canvasElement);
-      handleControls(detections, controlCanvasRef.current);
     }, 200);
   };
 
@@ -44,22 +39,15 @@ export default function HandRecognizer({ setHandResults }) {
       <video
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
         ref={videoRef}
-        width="640"
-        height="480"
+        width="300"
+        height="250"
       ></video>
       <canvas
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
         ref={canvasRef}
-        width="640"
-        height="480"
-        style={{ pointerEvents: "none" }}
-      ></canvas>
-      <canvas
-        className="absolute z-10 border-2 border-blue-800 rounded-lg"
-        ref={controlCanvasRef}
         width="300"
-        height="300"
-        style={{ pointerEvents: "none", top: "500px", left: "20px" }}
+        height="250"
+        style={{ pointerEvents: "none" }}
       ></canvas>
     </div>
   );
@@ -88,108 +76,13 @@ async function initModel() {
     });
 }
 
-function processDetections(detections, setHandResults, canvasCtx, canvasElement) {
-  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-
+function processDetections(detections, setHandResults) {
   if (detections && detections.landmarks && detections.landmarks.length > 0) {
     const hand = detections.landmarks[0];
 
-    // Draw landmarks on the canvas
-    hand.forEach((landmark) => {
-      const x = landmark.x * canvasElement.width; // Convert normalized x to canvas space
-      const y = landmark.y * canvasElement.height; // Convert normalized y to canvas space
-
-      canvasCtx.beginPath(); // Start a new drawing path
-      canvasCtx.arc(x, y, 5, 0, 2 * Math.PI); // Draw a circle (dot) at the landmark
-      canvasCtx.fillStyle = "white"; // Set fill color
-      canvasCtx.fill(); // Fill the circle with white color
-    });
-
-    // Draw skeleton by connecting landmarks
-    const connections = [
-      [0, 1], [1, 2], [2, 3], [3, 4],       // Thumb
-      [0, 5], [5, 6], [6, 7], [7, 8],       // Index finger
-      [5, 9], [9, 10], [10, 11], [11, 12],  // Middle finger
-      [9, 13], [13, 14], [14, 15], [15, 16], // Ring finger
-      [13, 17], [17, 18], [18, 19], [19, 20], // Pinky
-      [0, 17], [0, 5]                        // Palm base
-    ];
-
-    connections.forEach(([start, end]) => {
-      const startX = hand[start].x * canvasElement.width;
-      const startY = hand[start].y * canvasElement.height;
-      const endX = hand[end].x * canvasElement.width;
-      const endY = hand[end].y * canvasElement.height;
-
-      canvasCtx.beginPath();
-      canvasCtx.moveTo(startX, startY);
-      canvasCtx.lineTo(endX, endY);
-      canvasCtx.strokeStyle = "white";
-      canvasCtx.lineWidth = 2;
-      canvasCtx.stroke();
-    });
-
-    // Pass the processed results
     setHandResults(hand);
   } else {
     console.log("No hand landmarks detected.");
     setHandResults(null);
   }
-}
-
-
-function handleControls(detections, controlCanvas) {
-  if (!controlCanvas || !detections || !detections.landmarks) return;
-
-  const ctx = controlCanvas.getContext("2d");
-  ctx.clearRect(0, 0, controlCanvas.width, controlCanvas.height);
-
-  const hand = detections.landmarks[0];
-  if (!hand) return;
-
-  const palmBase = hand[0]; // Palm base is often index 0
-  const x = palmBase.x * controlCanvas.width;
-  const y = palmBase.y * controlCanvas.height;
-
-  // Draw the control point
-  ctx.beginPath();
-  ctx.arc(x, y, 10, 0, 2 * Math.PI);
-  ctx.fillStyle = "blue";
-  ctx.fill();
-
-  // Determine control directions
-  const centerX = controlCanvas.width / 2;
-  const centerY = controlCanvas.height / 2;
-  const threshold = 50; // Movement threshold
-
-  if (x < centerX - threshold) {
-    controls["a"] = true; // Simulates pressing "A"
-  } else {
-    controls["a"] = false;
-  }
-
-  if (x > centerX + threshold) {
-    controls["d"] = true; // Simulates pressing "D"
-  } else {
-    controls["d"] = false;
-  }
-
-  if (y < centerY - threshold) {
-    controls["s"] = true; // Simulates pressing "W"
-  } else {
-    controls["s"] = false;
-  }
-
-  if (y > centerY + threshold) {
-    controls["w"] = true; // Simulates pressing "S"
-  } else {
-    controls["w"] = false;
-  }
-
-  // Draw the control area
-  ctx.beginPath();
-  ctx.rect(centerX - threshold, centerY - threshold, threshold * 2, threshold * 2);
-  ctx.strokeStyle = "red";
-  ctx.lineWidth = 2;
-  ctx.stroke();
 }
