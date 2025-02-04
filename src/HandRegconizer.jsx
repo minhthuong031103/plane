@@ -39,8 +39,8 @@ export default function HandRecognizer({ setHandResults }) {
       <video
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
         ref={videoRef}
-        width="300"
-        height="250"
+        width="500" // Set width here
+        height="300" // Set height here
       ></video>
       <canvas
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
