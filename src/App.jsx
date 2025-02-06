@@ -1,12 +1,24 @@
 /* eslint-disable react/no-unknown-property */
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 // eslint-disable-next-line no-unused-vars
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import VirtualHand from "./VirtualHand.jsx";
 import SceneComponent from "./SceneComponent.jsx";
 import HandRecognizer from "./HandRegconizer.jsx";
-import GrabbableBox from "./GrabbableBox.jsx";
 import { OrbitControls } from "@react-three/drei";
+import { Physics } from "@react-three/cannon";
+import Cube from "./Cube.jsx";
+
+function CameraSetup() {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    camera.position.set(0, 0, 20); // Move camera to be in front of the hand
+    camera.lookAt(0, 0, 0); // Ensure camera is looking at the hand
+  }, [camera]);
+
+  return null; // This component only updates the camera
+}
 
 function App() {
   const [handResult, setHandResult] = useState(null);
@@ -19,12 +31,12 @@ function App() {
           position: "absolute",
           top: "10px",
           left: "10px",
-          width: "500px", // Set width here
-          height: "300px", // Set height here
-          zIndex: 10, // Ensures it stays on top of the game
+          width: "500px",
+          height: "300px",
+          zIndex: 10,
           borderRadius: "10px",
           overflow: "hidden",
-          backgroundColor: "rgba(0, 0, 0, 0.2)", // Optional semi-transparent background
+          backgroundColor: "rgba(0, 0, 0, 0.2)",
           padding: "5px",
         }}
       >
@@ -36,37 +48,36 @@ function App() {
         <Canvas
           shadows
           camera={{
-            position: [0, 2, 5],
-            fov: 60,
+            position: [0, 10, 0], // Position camera above the scene
+            rotation: [-Math.PI / 2, 0, 0], // Rotate camera to look down
+            fov: 75,
           }}
         >
           {/* Lighting */}
           <ambientLight intensity={0.3} />
           <directionalLight
-            position={[2, 5, 2]}
+            position={[5, 10, 5]}
             intensity={1}
             castShadow
             shadow-mapSize-width={1024}
             shadow-mapSize-height={1024}
             shadow-camera-near={0.1}
-            shadow-camera-far={20}
-            shadow-camera-left={-10}
-            shadow-camera-right={10}
-            shadow-camera-top={10}
-            shadow-camera-bottom={-10}
+            shadow-camera-far={50}
           />
-
+          <CameraSetup />
           {/* Components */}
-          <group>
+          <Physics>
             <SceneComponent />
             <VirtualHand handResult={handResult} />
-
-            {/* Add Grabbable Boxes */}
-            <GrabbableBox initialPosition={[0, 0, 0]} handResult={handResult} />
-            <GrabbableBox initialPosition={[1, 0, 0]} handResult={handResult} />
-            <GrabbableBox initialPosition={[-1, 0, 0]} handResult={handResult} />
-          </group>
-
+            {Array(5)
+              .fill()
+              .map((element, index) => (
+                <Cube
+                  props={{ position: [0, 5 * index, 0] }}
+                  key={index}
+                />
+              ))}
+          </Physics>
           <OrbitControls />
         </Canvas>
       </div>
@@ -75,3 +86,5 @@ function App() {
 }
 
 export default App;
+
+

@@ -1,12 +1,14 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
 /* eslint-disable react/no-unknown-property */
-import { useRef } from "react";
+
+import { useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Vector3 } from "three";
-import { Line } from "@react-three/drei"; // Use Line from drei
 
+import { Line } from "@react-three/drei";
+import { useSphere } from "@react-three/cannon";
 
-// Define hand landmark connections
 const HAND_CONNECTIONS = [
   [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
   [0, 5], [5, 6], [6, 7], [7, 8], // Index
@@ -16,23 +18,45 @@ const HAND_CONNECTIONS = [
   [0, 17], // Palm base
 ];
 
-function VirtualHand({ handResult }) {
-  const pointsRef = useRef([]);
-  const linesRef = useRef([]);
 
-  const SCALE = 5;  // Scale the hand to be larger
-  const HAND_POSITION = [0, 0, -5];  // Move hand closer to the camera
+function convertZValue(z) {
+  const SCALE_FACTOR = 10000000;
+  let zResult = Math.round(-z * SCALE_FACTOR)
+  if (zResult > 5) { // Close
+    return (zResult * 2)
+  } else { // Far
+    return -(zResult * 5)
+  }
+}
+
+function VirtualHand({ handResult }) {
+  const pointRef = useRef([]);
+  const lineRef = useRef([]);
+
+  // const zAxisRef = useRef(0);
+  const [handPosition, setHandPosition] = useState([0, 0, 0]);
+
+
+  const SCALE = {
+    X: 15,
+    Y: 10,
+  };
+
 
   useFrame(() => {
     if (!handResult) return;
 
-    // Update landmark positions
+    const newZ = convertZValue(handResult[0].z);
+
+    setHandPosition(([x, y]) => [x, y, newZ]);
+
+    // Update point positions
     handResult.forEach((point, index) => {
-      if (pointsRef.current[index]) {
-        pointsRef.current[index].position.set(
-          (point.x * 2 - 1) * SCALE,  // Scale x
-          -(point.y * 2 - 1) * SCALE,  // Scale y and invert for Three.js
-          point.z * SCALE // Scale z
+      if (pointRef.current) {
+        pointRef.current[index].position.set(
+          (point.x * 2 - 1) * SCALE.X,
+          -(point.y * 2 - 1) * SCALE.Y,
+          -point.z * SCALE.Z
         );
       }
     });
@@ -41,37 +65,37 @@ function VirtualHand({ handResult }) {
     HAND_CONNECTIONS.forEach((connection, index) => {
       const startPoint = handResult[connection[0]];
       const endPoint = handResult[connection[1]];
-      if (linesRef.current[index]) {
-        linesRef.current[index].geometry.setFromPoints([
+      if (lineRef.current[index]) {
+        lineRef.current[index].geometry.setFromPoints([
           new Vector3(
-            (startPoint.x * 2 - 1) * SCALE,
-            -(startPoint.y * 2 - 1) * SCALE,
-            startPoint.z * SCALE
+            (startPoint.x * 2 - 1) * SCALE.X,
+            -(startPoint.y * 2 - 1) * SCALE.Y,
+            -startPoint.z * SCALE.Z
           ),
           new Vector3(
-            (endPoint.x * 2 - 1) * SCALE,
-            -(endPoint.y * 2 - 1) * SCALE,
-            endPoint.z * SCALE
+            (endPoint.x * 2 - 1) * SCALE.X,
+            -(endPoint.y * 2 - 1) * SCALE.Y,
+            -endPoint.z * SCALE.Z
           ),
         ]);
       }
     });
+
+
   });
 
   return (
-    <group position={HAND_POSITION}>
-      {/* Render landmarks as spheres */}
+    <group position={handPosition}>
       {handResult &&
         handResult.map((_, index) => (
-          <mesh key={`point-${index}`} ref={(ref) => (pointsRef.current[index] = ref)} castShadow>
+          <mesh key={`point-${index}`} ref={(ref) => (pointRef.current[index] = ref)} castShadow>
             <sphereGeometry args={[0.09, 16, 16]} /> {/* Increased sphere size */}
             <meshStandardMaterial color="red" />
           </mesh>
         ))}
 
-      {/* Render connections as lines */}
       {HAND_CONNECTIONS.map((_, index) => (
-        <line key={`line-${index}`} ref={(ref) => (linesRef.current[index] = ref)}>
+        <line key={`line-${index}`} ref={(ref) => (lineRef.current[index] = ref)}>
           <bufferGeometry />
           <lineBasicMaterial color="black" />
         </line>

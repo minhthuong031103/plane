@@ -1,20 +1,20 @@
 /* eslint-disable react/no-unknown-property */
-import { useThree } from "@react-three/fiber";
-import { DoubleSide } from "three";
 // eslint-disable-next-line no-unused-vars
 import { GridHelper } from "three";
+import { usePlane } from "@react-three/cannon";
 
-function SceneComponent() {
-  const { viewport } = useThree();
+
+function SceneComponent(props) {
   const gridSize = 50; // The size of the grid
   const gridDivisions = 50; // Number of lines in one direction
+  const [ref] = usePlane(() => ({ rotation: [-Math.PI / 2, 0, 0], position: [0, -5, 0], ...props }));
 
   return (
     <group>
       {/* Ground Plane */}
-      <mesh position={[0, -5, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[viewport.width, viewport.height, 1]} receiveShadow>
-        <planeBufferGeometry args={[10, 10]} />
-        <meshBasicMaterial color="#faf9f6" side={DoubleSide} />
+      <mesh ref={ref} receiveShadow>
+        <planeGeometry args={[100, 100]} />
+        <meshStandardMaterial />
       </mesh>
 
       {/* Grid Helper for Caro-style board */}

@@ -31,7 +31,7 @@ export default function HandRecognizer({ setHandResults }) {
         Date.now()
       );
       processDetections(detections, setHandResults, canvasCtx, canvasElement);
-    }, 200);
+    }, 2000);
   };
 
   return (
@@ -81,8 +81,28 @@ function processDetections(detections, setHandResults) {
     const hand = detections.landmarks[0];
 
     setHandResults(hand);
+    console.log('PALM', convertZValue(hand[0].z));
   } else {
     console.log("No hand landmarks detected.");
     setHandResults(null);
   }
 }
+
+function convertZValue(z) {
+  const SCALE_FACTOR = 10000000;
+  let zResult = Math.round(-z * SCALE_FACTOR)
+  if (zResult > 5) { // Close
+    return (zResult * 2)
+  } else { // Far
+    return -(zResult * 5)
+  }
+}
+
+
+// function detectHandDistance(z) {
+//   if (z < -0.00000055) return "Very Close";
+//   if (z < -0.00000035) return "Close";
+//   if (z < -0.00000020) return "Normal Distance";
+//   if (z < -0.00000010) return "Far";
+//   return "Very Far";
+// }
