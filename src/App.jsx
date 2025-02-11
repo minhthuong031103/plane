@@ -1,31 +1,40 @@
 /* eslint-disable react/no-unknown-property */
 import { Canvas, useThree } from "@react-three/fiber";
-// eslint-disable-next-line no-unused-vars
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import VirtualHand from "./VirtualHand.jsx";
 import SceneComponent from "./SceneComponent.jsx";
 import HandRecognizer from "./HandRegconizer.jsx";
 import { OrbitControls } from "@react-three/drei";
-import { Physics } from "@react-three/cannon";
 import Cube from "./Cube.jsx";
 
 function CameraSetup() {
   const { camera } = useThree();
-
   useEffect(() => {
-    camera.position.set(0, 0, 20); // Move camera to be in front of the hand
-    camera.lookAt(0, 0, 0); // Ensure camera is looking at the hand
+    camera.position.set(0, 0, 10);
+    camera.lookAt(0, 0, 0);
   }, [camera]);
-
-  return null; // This component only updates the camera
+  return null;
 }
 
 function App() {
   const [handResult, setHandResult] = useState(null);
+  const cubeRef = useRef();
+
+  // Handlers for grab interaction
+  const handleGrabStateChange = (isGrabbing) => {
+    if (cubeRef.current) {
+      cubeRef.current.setIsGrabbed(isGrabbing);
+    }
+  };
+
+  const handlePositionUpdate = (position) => {
+    if (cubeRef.current) {
+      cubeRef.current.setTargetPosition(position);
+    }
+  };
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
-      {/* HandRecognizer (Top Left Overlay) */}
       <div
         style={{
           position: "absolute",
@@ -43,17 +52,16 @@ function App() {
         <HandRecognizer setHandResults={setHandResult} />
       </div>
 
-      {/* Game Scene (Full Screen Canvas) */}
       <div style={{ width: "100vw", height: "100vh" }}>
         <Canvas
+          frameloop="demand"
           shadows
           camera={{
-            position: [0, 10, 0], // Position camera above the scene
-            rotation: [-Math.PI / 2, 0, 0], // Rotate camera to look down
+            position: [0, 10, 0],
+            rotation: [-Math.PI / 2, 0, 0],
             fov: 75,
           }}
         >
-          {/* Lighting */}
           <ambientLight intensity={0.3} />
           <directionalLight
             position={[5, 10, 5]}
@@ -65,19 +73,13 @@ function App() {
             shadow-camera-far={50}
           />
           <CameraSetup />
-          {/* Components */}
-          <Physics>
-            <SceneComponent />
-            <VirtualHand handResult={handResult} />
-            {Array(5)
-              .fill()
-              .map((element, index) => (
-                <Cube
-                  props={{ position: [0, 5 * index, 0] }}
-                  key={index}
-                />
-              ))}
-          </Physics>
+          <SceneComponent />
+          <VirtualHand
+            handResult={handResult}
+            onGrabStateChange={handleGrabStateChange}
+            onPositionUpdate={handlePositionUpdate}
+          />
+          <Cube ref={cubeRef} position={[0, 0, 0]} />
           <OrbitControls />
         </Canvas>
       </div>
@@ -86,5 +88,3 @@ function App() {
 }
 
 export default App;
-
-

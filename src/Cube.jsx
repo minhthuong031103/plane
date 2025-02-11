@@ -1,17 +1,40 @@
 /* eslint-disable react/no-unknown-property */
 /* eslint-disable react/prop-types */
-import { useBox } from "@react-three/cannon";
 import { useFrame } from "@react-three/fiber";
+import React, { useState, useRef } from "react";
+import { Vector3 } from "three";
 
+const Cube = React.forwardRef((props, ref) => {
+  const { position } = props;
+  const meshRef = useRef();
+  const [isGrabbed, setIsGrabbed] = useState(false);
+  const [targetPosition, setTargetPosition] = useState(new Vector3(...position));
+  const initialPosition = useRef(new Vector3(...position));
 
-// eslint-disable-next-line no-unused-vars
-export default function Cube({ props, handler }) {
-  const [ref] = useBox(() => ({ mass: 1, type: 'Kinematic', ...props }));
-  useFrame(() => { });
+  // Smooth movement
+  useFrame(() => {
+    if (!meshRef.current) return;
+
+    if (isGrabbed) {
+      // Smooth lerp to target position when grabbed
+      meshRef.current.position.lerp(targetPosition, 0.3);
+    } else {
+      // Return to initial position when released
+      meshRef.current.position.lerp(initialPosition.current, 0.1);
+    }
+  });
+
   return (
-    <mesh ref={ref} castShadow receiveShadow>
+    <mesh
+      ref={meshRef}
+      position={position}
+      castShadow
+      receiveShadow
+    >
       <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial />
+      <meshStandardMaterial color={isGrabbed ? "orange" : "yellow"} />
     </mesh>
   );
-}
+});
+
+export default Cube;
