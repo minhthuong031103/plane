@@ -31,7 +31,7 @@ export default function HandRecognizer({ setHandResults }) {
         Date.now()
       );
       processDetections(detections, setHandResults, canvasCtx, canvasElement);
-    }, 1000);
+    }, 100);
   };
 
   return (
@@ -89,9 +89,9 @@ function processDetections(detections, setHandResults) {
 }
 
 
-function estimateZPosition(hands) {
-  const SCALE_FACTOR = 500;
-  const handWidth = Math.abs(hands[0].x - hands[17].x);
+// function estimateZPosition(hands) {
+//   const SCALE_FACTOR = 500;
+//   const handWidth = Math.abs(hands[0].x - hands[17].x);
 
-  return (handWidth * SCALE_FACTOR) - 5;
-}
+//   return (handWidth * SCALE_FACTOR) - 5;
+// }

@@ -1,5 +1,6 @@
 /* eslint-disable react/no-unknown-property */
 import { Canvas, useThree } from "@react-three/fiber";
+// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect, useRef } from "react";
 import VirtualHand from "./VirtualHand.jsx";
 import SceneComponent from "./SceneComponent.jsx";
@@ -19,20 +20,31 @@ function CameraSetup() {
 function App() {
   const [handResult, setHandResult] = useState(null);
   const cubeRef = useRef();
+  const [canGrab, setCanGrab] = useState(false);
 
-  // Handlers for grab interaction
-  const handleGrabStateChange = (isGrabbing) => {
+  const handleGrabStateChange = (isGrabbing, thumbPosition, indexPosition) => {
     if (cubeRef.current) {
-      cubeRef.current.setIsGrabbed(isGrabbing);
+      // Only allow grabbing if fingers are touching the cube
+      if (isGrabbing && !canGrab) {
+        const collisionDetected = cubeRef.current.checkGrabCollision(thumbPosition, indexPosition);
+        setCanGrab(collisionDetected);
+
+        if (collisionDetected) {
+          cubeRef.current.setIsGrabbed(true);
+        }
+      } else if (!isGrabbing && canGrab) {
+        // Release the cube
+        cubeRef.current.setIsGrabbed(false);
+        setCanGrab(false);
+      }
     }
   };
 
   const handlePositionUpdate = (position) => {
-    if (cubeRef.current) {
+    if (cubeRef.current && canGrab) {
       cubeRef.current.setTargetPosition(position);
     }
   };
-
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
       <div
@@ -80,6 +92,10 @@ function App() {
             onPositionUpdate={handlePositionUpdate}
           />
           <Cube ref={cubeRef} position={[0, 0, 0]} />
+
+          {/* <Cube ref={cubeRef} position={[5, 3, 0]} /> */}
+
+
           <OrbitControls />
         </Canvas>
       </div>

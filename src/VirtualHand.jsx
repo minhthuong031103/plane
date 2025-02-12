@@ -16,7 +16,8 @@ const HAND_CONNECTIONS = [
   [0, 5], [5, 6], [6, 7], [7, 8], // Index
   [5, 9], [9, 10], [10, 11], [11, 12], // Middle
   [9, 13], [13, 14], [14, 15], [15, 16], // Ring
-  [13, 17], [17, 18], [18, 19], [19, 20], // Palm base
+  [13, 17], [17, 18], [18, 19], [19, 20], // Pinky
+  [0, 17], // Palm base
 ];
 
 function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
@@ -29,8 +30,10 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
   const GRAB_THRESHOLD = 6; // Distance threshold for grab detection
 
   // Calculate pinch point and grab state
+  // In VirtualHand.jsx, modify the calculateHandState function:
+
   const calculateHandState = (handResult) => {
-    if (!handResult) return { isGrabbing: false, position: null };
+    if (!handResult) return { isGrabbing: false, position: null, thumbPosition: null, indexPosition: null };
 
     const thumb = handResult[FINGERTIPS.THUMB];
     const index = handResult[FINGERTIPS.INDEX];
@@ -40,23 +43,31 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
       Math.pow((thumb.y - index.y), 2)
     );
 
-    // Calculate midpoint between thumb and index
-    const midPoint = {
-      x: (thumb.x + index.x) / 2,
-      y: (thumb.y + index.y) / 2,
-      z: ((thumb.z || 0) + (index.z || 0)) / 2
-    };
+    // Calculate world positions for thumb and index
+    const thumbWorldPos = new Vector3(
+      (thumb.x * 2 - 1) * SCALE.X,
+      -(thumb.y * 2 - 1) * SCALE.Y,
+      // thumb.z * SCALE.Z
+    );
 
-    // Convert to world coordinates
-    const worldPosition = new Vector3(
-      (midPoint.x * 2 - 1) * SCALE.X,
-      -(midPoint.y * 2 - 1) * SCALE.Y,
-      midPoint.z * SCALE.Z
+    const indexWorldPos = new Vector3(
+      (index.x * 2 - 1) * SCALE.X,
+      -(index.y * 2 - 1) * SCALE.Y,
+      index.z * SCALE.Z
+    );
+
+    // Calculate midpoint
+    const midPoint = new Vector3(
+      (thumbWorldPos.x + indexWorldPos.x) / 2,
+      (thumbWorldPos.y + indexWorldPos.y) / 2,
+      (thumbWorldPos.z + indexWorldPos.z) / 2
     );
 
     return {
       isGrabbing: (pinchDistance * 100) < GRAB_THRESHOLD,
-      position: worldPosition
+      position: midPoint,
+      thumbPosition: thumbWorldPos,
+      indexPosition: indexWorldPos
     };
   };
 
@@ -64,12 +75,12 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
     if (!handResult) return;
 
     // Calculate grab state and position
-    const { isGrabbing: newGrabState, position } = calculateHandState(handResult);
+    const { isGrabbing: newGrabState, position, thumbPosition, indexPosition } = calculateHandState(handResult);
 
     // If grab state changed, notify parent
     if (newGrabState !== isGrabbing) {
       setIsGrabbing(newGrabState);
-      onGrabStateChange?.(newGrabState);
+      onGrabStateChange?.(newGrabState, thumbPosition, indexPosition);
     }
 
     // If grabbing, update position
