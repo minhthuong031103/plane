@@ -20,23 +20,33 @@ const HAND_CONNECTIONS = [
   [0, 17], // Palm base
 ];
 
+
 function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
+  const { hand, worldHand } = handResult || {};
   const pointsRef = useRef([]);
   const linesRef = useRef([]);
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const groupRef = useRef();
 
-  const SCALE = { X: 15, Y: 10, Z: 5 };
+  // Adjusted scale factors for better 3D visualization
+  const SCALE = {
+    X: 15,
+    Y: 10,
+    Z: 15
+  };
+
+  const WORLD_SCALE = {
+    Z: 165 // Adjust this value to fine-tune the Z-axis sensitivity
+  };
+
   const SPHERE_RADIUS = 0.2;
-  const GRAB_THRESHOLD = 6; // Distance threshold for grab detection
+  const GRAB_THRESHOLD = 6;
 
-  // Calculate pinch point and grab state
-  // In VirtualHand.jsx, modify the calculateHandState function:
+  const calculateHandState = (hand, palmWorldPoint) => {
+    if (!hand) return { isGrabbing: false, position: null, thumbPosition: null, indexPosition: null };
 
-  const calculateHandState = (handResult) => {
-    if (!handResult) return { isGrabbing: false, position: null, thumbPosition: null, indexPosition: null };
-
-    const thumb = handResult[FINGERTIPS.THUMB];
-    const index = handResult[FINGERTIPS.INDEX];
+    const thumb = hand[FINGERTIPS.THUMB];
+    const index = hand[FINGERTIPS.INDEX];
 
     const pinchDistance = Math.sqrt(
       Math.pow((thumb.x - index.x), 2) +
@@ -47,20 +57,20 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
     const thumbWorldPos = new Vector3(
       (thumb.x * 2 - 1) * SCALE.X,
       -(thumb.y * 2 - 1) * SCALE.Y,
-      // thumb.z * SCALE.Z
+      -palmWorldPoint * WORLD_SCALE.Z
     );
 
     const indexWorldPos = new Vector3(
       (index.x * 2 - 1) * SCALE.X,
       -(index.y * 2 - 1) * SCALE.Y,
-      index.z * SCALE.Z
+      -palmWorldPoint * WORLD_SCALE.Z
     );
 
     // Calculate midpoint
     const midPoint = new Vector3(
       (thumbWorldPos.x + indexWorldPos.x) / 2,
       (thumbWorldPos.y + indexWorldPos.y) / 2,
-      (thumbWorldPos.z + indexWorldPos.z) / 2
+      -palmWorldPoint * WORLD_SCALE.Z
     );
 
     return {
@@ -72,59 +82,77 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
   };
 
   useFrame(() => {
-    if (!handResult) return;
+    if (!hand || !worldHand) return;
 
-    // Calculate grab state and position
-    const { isGrabbing: newGrabState, position, thumbPosition, indexPosition } = calculateHandState(handResult);
+    // Move the entire hand group based on palm position (landmark 0)
+    const palmPoint = hand[0];
+    const palmWorldPoint = worldHand[0];
 
-    // If grab state changed, notify parent
-    if (newGrabState !== isGrabbing) {
-      setIsGrabbing(newGrabState);
-      onGrabStateChange?.(newGrabState, thumbPosition, indexPosition);
+    if (groupRef.current) {
+      groupRef.current.position.set(
+        0,
+        0,
+        -palmWorldPoint.z * WORLD_SCALE.Z  // Negative to convert from MediaPipe to R3F coordinates
+      );
+      console.log(groupRef.current.position); // Add this to debug the position
     }
 
-    // If grabbing, update position
-    if (newGrabState && position) {
-      onPositionUpdate?.(position);
-    }
-
-    // Update hand visualization
-    handResult.forEach((point, index) => {
+    // Update individual points with world coordinates
+    hand.forEach((point, index) => {
       const pointX = (point.x * 2 - 1) * SCALE.X;
       const pointY = -(point.y * 2 - 1) * SCALE.Y;
-      const pointZ = point.z || SCALE.Z;
+      const worldPoint = worldHand[index];
+      // const pointZ = -worldPoint.z * WORLD_SCALE.Z;
 
       if (pointsRef.current[index]) {
-        pointsRef.current[index].position.set(pointX, pointY, pointZ);
+        pointsRef.current[index].position.set(pointX, pointY, 0);
       }
     });
 
-    // Update lines
+
+    // Update connections with world coordinates
     HAND_CONNECTIONS.forEach((connection, index) => {
-      const startPoint = handResult[connection[0]];
-      const endPoint = handResult[connection[1]];
+      const startPoint = hand[connection[0]];
+      const endPoint = hand[connection[1]];
+      const startWorldPoint = worldHand[connection[0]];
+      const endWorldPoint = worldHand[connection[1]];
+
       if (linesRef.current[index]) {
         linesRef.current[index].geometry.setFromPoints([
           new Vector3(
             (startPoint.x * 2 - 1) * SCALE.X,
             -(startPoint.y * 2 - 1) * SCALE.Y,
-            startPoint.z * SCALE.Z
+            // -startWorldPoint.z * WORLD_SCALE.Z
+            0
           ),
           new Vector3(
             (endPoint.x * 2 - 1) * SCALE.X,
             -(endPoint.y * 2 - 1) * SCALE.Y,
-            endPoint.z * SCALE.Z
+            // -endWorldPoint.z * WORLD_SCALE.Z
+            0
           ),
         ]);
       }
     });
+
+    // Handle grab state and position updates
+    const { isGrabbing: newGrabState, position, thumbPosition, indexPosition } = calculateHandState(hand, palmWorldPoint.z);
+
+    if (newGrabState !== isGrabbing) {
+      setIsGrabbing(newGrabState);
+      onGrabStateChange?.(newGrabState, thumbPosition, indexPosition);
+    }
+
+    if (newGrabState && position) {
+      onPositionUpdate?.(position);
+    }
   });
 
   return (
-    <group position={[0, 0, 0]}>
+    <group ref={groupRef}>
       {/* Render landmarks as spheres */}
-      {handResult &&
-        handResult.map((_, index) => (
+      {hand &&
+        hand.map((_, index) => (
           <mesh
             key={`point-${index}`}
             ref={(ref) => (pointsRef.current[index] = ref)}

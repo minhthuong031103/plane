@@ -93,7 +93,6 @@ function App() {
           />
           <Cube ref={cubeRef} position={[0, 0, 0]} />
 
-          {/* <Cube ref={cubeRef} position={[5, 3, 0]} /> */}
 
 
           <OrbitControls />

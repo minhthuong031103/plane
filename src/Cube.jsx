@@ -9,8 +9,9 @@ const Cube = React.forwardRef((props, ref) => {
   const meshRef = useRef();
   const [isGrabbed, setIsGrabbed] = useState(false);
   const [targetPosition, setTargetPosition] = useState(new Vector3(...position));
-  const initialPosition = useRef(new Vector3(...position));
   const boundingBox = useRef(new Box3());
+
+  const initialPosition = useRef(new Vector3(...position));
 
   // Check if a point is near the cube's surface
   const isPointTouchingCube = (point) => {
@@ -20,7 +21,7 @@ const Cube = React.forwardRef((props, ref) => {
     boundingBox.current.setFromObject(meshRef.current);
 
     // Add small threshold for "touch" detection (0.2 units)
-    const threshold = 0.7;
+    const threshold = 0.5;
     const expanded = boundingBox.current.clone().expandByScalar(threshold);
 
     return expanded.containsPoint(point);
@@ -45,10 +46,10 @@ const Cube = React.forwardRef((props, ref) => {
     if (!meshRef.current) return;
 
     if (isGrabbed) {
-      meshRef.current.position.lerp(targetPosition, 1);
-    } else {
-      meshRef.current.position.lerp(initialPosition.current, 0.1);
+      meshRef.current.position.lerp(targetPosition, 0.5);
     }
+
+    console.log(meshRef.current.position)
   });
 
   return (
@@ -58,7 +59,7 @@ const Cube = React.forwardRef((props, ref) => {
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[1, 1, 1]} />
+      <boxGeometry args={[2, 2, 2]} />
       <meshStandardMaterial color={isGrabbed ? "orange" : "yellow"} />
     </mesh>
   );

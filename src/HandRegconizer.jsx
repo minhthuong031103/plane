@@ -39,14 +39,14 @@ export default function HandRecognizer({ setHandResults }) {
       <video
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
         ref={videoRef}
-        width="500" // Set width here
-        height="300" // Set height here
+        width="500"
+        height="300"
       ></video>
       <canvas
         className="absolute -scale-x-1 border-2 border-stone-800 rounded-lg"
         ref={canvasRef}
-        width="300"
-        height="250"
+        width="500"  // Updated to match video width
+        height="300" // Updated to match video height
         style={{ pointerEvents: "none" }}
       ></canvas>
     </div>
@@ -73,25 +73,21 @@ async function initModel() {
       },
       numHands: 1,
       runningMode: "VIDEO",
+      outputWorldLandmarks: true,
     });
 }
 
 function processDetections(detections, setHandResults) {
   if (detections && detections.landmarks && detections.landmarks.length > 0) {
     const hand = detections.landmarks[0];
+    const worldHand = detections.worldLandmarks[0]
 
-    setHandResults(hand);
-    // console.log("Hand landmarks detected:", estimateZPosition(hand));
+    const handResult = { hand, worldHand }
+
+    setHandResults(handResult);
   } else {
     // console.log("No hand landmarks detected.");
     setHandResults(null);
   }
 }
 
-
-// function estimateZPosition(hands) {
-//   const SCALE_FACTOR = 500;
-//   const handWidth = Math.abs(hands[0].x - hands[17].x);
-
-//   return (handWidth * SCALE_FACTOR) - 5;
-// }
