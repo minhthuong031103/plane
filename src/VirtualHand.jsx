@@ -35,8 +35,15 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
     Z: 15
   };
 
+  // Add constants for depth detection
+  const DEPTH_THRESHOLDS = {
+    CLOSE: 0.3, // Threshold for considering hand close to camera
+    INCONSISTENT: 0.16 // Max allowed difference between palm and finger depths
+  };
+
+
   const WORLD_SCALE = {
-    Z: 165 // Adjust this value to fine-tune the Z-axis sensitivity
+    Z: 100 // Adjust this value to fine-tune the Z-axis sensitivity
   };
 
   const SPHERE_RADIUS = 0.2;
@@ -81,21 +88,53 @@ function VirtualHand({ handResult, onGrabStateChange, onPositionUpdate }) {
     };
   };
 
+  const calculateHandDepth = (worldHand) => {
+    if (!worldHand) return { isClose: false, isConsistent: true };
+
+    // Calculate average depth of palm (using landmarks 0, 5, 9, 13, 17)
+    const palmPoints = [0, 5, 9, 13, 17];
+    const palmDepth = palmPoints.reduce((sum, idx) => sum + worldHand[idx].z, 0) / palmPoints.length;
+
+    // Calculate average depth of fingertips
+    const fingertipPoints = [FINGERTIPS.THUMB, FINGERTIPS.INDEX, FINGERTIPS.MIDDLE, FINGERTIPS.RING, FINGERTIPS.PINKY];
+    const fingertipsDepth = fingertipPoints.reduce((sum, idx) => sum + worldHand[idx].z, 0) / fingertipPoints.length;
+
+    // Check if hand is close to camera
+    const isClose = palmDepth < DEPTH_THRESHOLDS.CLOSE;
+
+    // Check for inconsistent depth between palm and fingers
+    const depthDifference = Math.abs(palmDepth - fingertipsDepth);
+    const isConsistent = depthDifference < DEPTH_THRESHOLDS.INCONSISTENT;
+
+    return {
+      isClose,
+      isConsistent,
+      palmDepth,
+      fingertipsDepth
+    };
+  };
+
   useFrame(() => {
     if (!hand || !worldHand) return;
 
+    const depthInfo = calculateHandDepth(worldHand);
+
     // Move the entire hand group based on palm position (landmark 0)
-    const palmPoint = hand[0];
+    // const palmPoint = hand[0];
     const palmWorldPoint = worldHand[0];
 
     if (groupRef.current) {
+      // Adjust position based on whether hand is close to camera
+      const zScale = depthInfo.isClose ? WORLD_SCALE.Z * 1.5 : WORLD_SCALE.Z;
       groupRef.current.position.set(
         0,
         0,
-        -palmWorldPoint.z * WORLD_SCALE.Z  // Negative to convert from MediaPipe to R3F coordinates
+        -palmWorldPoint.z * zScale
       );
-      console.log(groupRef.current.position); // Add this to debug the position
+      console.log(zScale)
     }
+
+    // Add depth calculation
 
     // Update individual points with world coordinates
     hand.forEach((point, index) => {
